@@ -42,7 +42,7 @@
 
     function renderTable(data) {
       data.sort((a, b) => new Date(b.order_paid_at) - new Date(a.order_paid_at));
-      let html = '<table><thead><tr><th>Shipping Contact</th><th>Inventory Location</th><th>SKU</th><th>Product Title</th><th>Buyer ID</th><th>User ID</th><th>Shipping City</th><th>Order Paid At</th></tr></thead><tbody>';
+      let html = '<table><thead><tr><th>Shipping Contact</th><th>Inventory Location</th><th>SKU</th><th>Product Title</th><th>Shipping Method</th><th>User ID</th><th>Shipping City</th><th>Order Paid At</th></tr></thead><tbody>';
       for (const row of data) {
         const orderItems = JSON.parse(row.order_items_json || '[]');
         const firstItem = orderItems[0] || {};
