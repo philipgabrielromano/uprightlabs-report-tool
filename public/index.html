@@ -47,12 +47,12 @@
         const orderItems = JSON.parse(row.order_items_json || '[]');
         const firstItem = orderItems[0] || {};
         html += `<tr>
-          <td>${row.product_sku}</td>
-          <td>${row.shipping_method || '—'}</td>
-          <td>${row.inventory_location || '—'}</td>
-          <td>${row.product_title || '—'}</td>
-          <td>${row.channel_buyer_id || '—'}</td>
           <td>${row.shipping_contact || '—'}</td>
+          <td>${row.inventory_location || '—'}</td>
+          <td>${row.product_sku}</td>
+          <td>${row.product_title || '—'}</td>
+          <td>${row.shipping_method || '—'}</td>
+          <td>${row.channel_buyer_id || '—'}</td>
           <td>${row.shipping_city || '—'}</td>
           <td>${row.order_paid_at || '—'}</td>
         </tr>`;
