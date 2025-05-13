@@ -4,7 +4,7 @@ const path = require('path');
 require('dotenv').config();
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 const API_BASE = 'https://app.uprightlabs.com/api/reports';
 
 app.use(express.static('public'));
