@@ -71,7 +71,6 @@ app.get('/api/export', async (req, res) => {
     merged[sku][type].push(row);
   }
 }
-    merged[sku][type].push(row);
   }
 };
         merged[sku][type].push(row);
