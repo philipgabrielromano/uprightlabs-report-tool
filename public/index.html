@@ -25,7 +25,8 @@
 
   <div id="results"></div>
 
-  <script>
+<script>
+  window.addEventListener("DOMContentLoaded", () => {
     async function loadReport() {
       const start = document.getElementById('start').value;
       const end = document.getElementById('end').value;
@@ -40,24 +41,24 @@
     }
 
     function renderTable(data) {
-  data.sort((a, b) => new Date(b.order_paid_at) - new Date(a.order_paid_at));
-  let html = '<table><thead><tr><th>SKU</th><th>Shipping Method</th><th>Inventory Location</th><th>Product Title</th><th>Buyer ID</th><th>Shipping Contact</th><th>Shipping City</th><th>Order Paid At</th></tr></thead><tbody>';
-  for (const row of data) {
-    const orderItems = JSON.parse(row.order_items_json || '[]');
-    const firstItem = orderItems[0] || {};
-    html += `<tr>
-      <td>${row.product_sku}</td>
-      <td>${row.shipping_method || '—'}</td>
-      <td>${row.inventory_location || '—'}</td>
-      <td>${row.product_title || '—'}</td>
-      <td>${row.channel_buyer_id || '—'}</td>
-      <td>${row.shipping_contact || '—'}</td>
-      <td>${row.shipping_city || '—'}</td>
-      <td>${row.order_paid_at || '—'}</td>
-    </tr>`;
-  }
-  html += '</tbody></table>';
-  document.getElementById('results').innerHTML = html;
+      data.sort((a, b) => new Date(b.order_paid_at) - new Date(a.order_paid_at));
+      let html = '<table><thead><tr><th>SKU</th><th>Shipping Method</th><th>Inventory Location</th><th>Product Title</th><th>Buyer ID</th><th>Shipping Contact</th><th>Shipping City</th><th>Order Paid At</th></tr></thead><tbody>';
+      for (const row of data) {
+        const orderItems = JSON.parse(row.order_items_json || '[]');
+        const firstItem = orderItems[0] || {};
+        html += `<tr>
+          <td>${row.product_sku}</td>
+          <td>${row.shipping_method || '—'}</td>
+          <td>${row.inventory_location || '—'}</td>
+          <td>${row.product_title || '—'}</td>
+          <td>${row.channel_buyer_id || '—'}</td>
+          <td>${row.shipping_contact || '—'}</td>
+          <td>${row.shipping_city || '—'}</td>
+          <td>${row.order_paid_at || '—'}</td>
+        </tr>`;
+      }
+      html += '</tbody></table>';
+      document.getElementById('results').innerHTML = html;
     }
 
     function populateShippingMethods(data) {
@@ -83,8 +84,7 @@
       data.forEach(obj => {
         rows.push(keys.map(k => JSON.stringify(obj[k] || '')).join(','));
       });
-      const blob = new Blob([rows.join('
-')], { type: 'text/csv' });
+      const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -92,8 +92,12 @@
       a.click();
       URL.revokeObjectURL(url);
     }
+
+    // Attach functions globally for onclick to work
     window.loadReport = loadReport;
-  window.downloadCSV = downloadCSV;
+    window.downloadCSV = downloadCSV;
+  });
 </script>
+
 </body>
 </html>
