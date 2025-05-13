@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Upright Labs Report Tool</title>
+  <style>
+    body { font-family: sans-serif; margin: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    details > summary { font-weight: bold; cursor: pointer; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Upright Labs Report</h1>
+
+  <label>Start Date: <input type="date" id="start"></label>
+  <label>End Date: <input type="date" id="end"></label>
+  <label>Shipping Method:
+    <select id="shippingMethod">
+      <option value="">-- Any --</option>
+    </select>
+  </label>
+  <button onclick="loadReport()">Run Report</button>
+  <button onclick="downloadCSV()">Export CSV</button>
+
+  <div id="results"></div>
+
+  <script>
+    async function loadReport() {
+      const start = document.getElementById('start').value;
+      const end = document.getElementById('end').value;
+      const method = document.getElementById('shippingMethod').value;
+
+      const res = await fetch(`/api/export?time_start=${start}T00:00:00.000Z&time_end=${end}T23:59:59.999Z&shipping_method=${encodeURIComponent(method)}`);
+      const data = await res.json();
+
+      renderTable(data);
+      populateShippingMethods(data);
+      window.__reportData = data;
+    }
+
+    function renderTable(data) {
+      let html = '<table><thead><tr><th>SKU</th><th>Order Items</th><th>eBay</th><th>ShopGoodwill</th></tr></thead><tbody>';
+      for (const row of data) {
+        html += `<tr>
+          <td><details><summary>${row.product_sku}</summary>
+            <pre>${JSON.stringify(row, null, 2)}</pre>
+          </details></td>
+          <td>${row.order_items_count}</td>
+          <td>${row.ebay_count}</td>
+          <td>${row.shopgoodwill_count}</td>
+        </tr>`;
+      }
+      html += '</tbody></table>';
+      document.getElementById('results').innerHTML = html;
+    }
+
+    function populateShippingMethods(data) {
+      const set = new Set();
+      data.forEach(row => {
+        const items = JSON.parse(row.order_items_json || '[]');
+        items.forEach(item => {
+          if (item.shipping_method) set.add(item.shipping_method);
+        });
+      });
+      const select = document.getElementById('shippingMethod');
+      const current = select.value;
+      select.innerHTML = '<option value="">-- Any --</option>';
+      [...set].sort().forEach(m => {
+        select.innerHTML += `<option value="${m}" ${m === current ? 'selected' : ''}>${m}</option>`;
+      });
+    }
+
+    function downloadCSV() {
+      const data = window.__reportData || [];
+      const keys = Object.keys(data[0] || {});
+      const rows = [keys.join(',')];
+      data.forEach(obj => {
+        rows.push(keys.map(k => JSON.stringify(obj[k] || '')).join(','));
+      });
+      const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'upright_report.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  </script>
+</body>
+</html>
