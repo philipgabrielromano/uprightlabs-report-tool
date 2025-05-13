@@ -80,7 +80,7 @@ app.get('/api/export', async (req, res) => {
         return;
       }
       for (const row of group) {
-        if (type === 'order_items' && shipping_method && row.shipping_method !== shipping_method) continue;
+        if (type === 'order_items' && shipping_method && row.order_shipping_method !== shipping_method) continue;
         const sku = row.product_sku || 'UNKNOWN';
         if (!merged[sku]) merged[sku] = { product_sku: sku, order_items: [], ebay: [], shopgoodwill: [] };
         merged[sku][type].push(row);
