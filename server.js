@@ -70,7 +70,7 @@ app.get('/api/export', async (req, res) => {
           shipping_city: order.shipping_city || ''
         };
       }
-    });(orderResponse) ? orderResponse : orderResponse.data || [];
+    });
 
     const merged = {};
 
