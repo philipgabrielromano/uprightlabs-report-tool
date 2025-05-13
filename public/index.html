@@ -86,7 +86,7 @@
         rows.push(keys.map(k => JSON.stringify(obj[k] || '')).join(','));
       });
       const blob = new Blob([rows.join('
-')], { type: 'text/csv' });
+')')], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
