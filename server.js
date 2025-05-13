@@ -43,17 +43,18 @@ app.get('/api/listings/shopgoodwill', (req, res) => {
 
 app.get('/api/export', async (req, res) => {
   const { time_start, time_end, shipping_method } = req.query;
-  const endpoints = [
-    fetch(getUrl('/order_items', time_start, time_end), {
-      headers: { 'X-Authorization': process.env.UPRIGHT_API_KEY }
-    }).then(r => r.json()),
-    fetch(getUrl('/listings/ebay', time_start, time_end), {
-      headers: { 'X-Authorization': process.env.UPRIGHT_API_KEY }
-    }).then(r => r.json()),
-    fetch(getUrl('/listings/shopgoodwill', time_start, time_end), {
-      headers: { 'X-Authorization': process.env.UPRIGHT_API_KEY }
-    }).then(r => r.json())
-  ];
+  try {
+    const [orders, ebay, sg] = await Promise.all([
+      fetch(getUrl('/order_items', time_start, time_end), {
+        headers: { 'X-Authorization': process.env.UPRIGHT_API_KEY }
+      }).then(r => r.json()),
+      fetch(getUrl('/listings/ebay', time_start, time_end), {
+        headers: { 'X-Authorization': process.env.UPRIGHT_API_KEY }
+      }).then(r => r.json()),
+      fetch(getUrl('/listings/shopgoodwill', time_start, time_end), {
+        headers: { 'X-Authorization': process.env.UPRIGHT_API_KEY }
+      }).then(r => r.json())
+    ]);
 
   try {
     const [orders, ebay, sg] = await Promise.all(endpoints);
@@ -71,8 +72,6 @@ app.get('/api/export', async (req, res) => {
     merged[sku][type].push(row);
   }
 }
-  }
-};
         merged[sku][type].push(row);
       }
     }
