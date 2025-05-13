@@ -79,20 +79,20 @@
     }
 
     function downloadCSV() {
-      const data = window.__reportData || [];
-      const keys = Object.keys(data[0] || {});
-      const rows = [keys.join(',')];
-      data.forEach(obj => {
-        rows.push(keys.map(k => JSON.stringify(obj[k] || '')).join(','));
-      });
-      const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'upright_report.csv';
-      a.click();
-      URL.revokeObjectURL(url);
-    }
+  const data = window.__reportData || [];
+  const keys = Object.keys(data[0] || {});
+  const rows = [keys.join(',')];
+  data.forEach(obj => {
+    rows.push(keys.map(k => JSON.stringify(obj[k] || '')).join(','));
+  });
+  const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'upright_report.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
     window.loadReport = loadReport;
     window.downloadCSV = downloadCSV;
