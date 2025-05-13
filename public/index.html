@@ -25,7 +25,7 @@
 
   <div id="results"></div>
 
-<script defer>
+  <script defer>
   window.addEventListener("DOMContentLoaded", () => {
     async function loadReport() {
       const start = document.getElementById('start').value;
@@ -62,15 +62,16 @@
     }
 
     function populateShippingMethods(data) {
-      const set = new Set();
+      const select = document.getElementById('shippingMethod');
+      const current = select.value;
+      const staticOptions = ['FedEx', 'Pickup', 'FedExHomeDelivery'];
+      const set = new Set(staticOptions);
       data.forEach(row => {
         const items = JSON.parse(row.order_items_json || '[]');
         items.forEach(item => {
           if (item.shipping_method) set.add(item.shipping_method);
         });
       });
-      const select = document.getElementById('shippingMethod');
-      const current = select.value;
       select.innerHTML = '<option value="">-- Any --</option>';
       [...set].sort().forEach(m => {
         select.innerHTML += `<option value="${m}" ${m === current ? 'selected' : ''}>${m}</option>`;
@@ -84,7 +85,8 @@
       data.forEach(obj => {
         rows.push(keys.map(k => JSON.stringify(obj[k] || '')).join(','));
       });
-      const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+      const blob = new Blob([rows.join('
+')], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -93,11 +95,9 @@
       URL.revokeObjectURL(url);
     }
 
-    // Attach functions globally for onclick to work
     window.loadReport = loadReport;
     window.downloadCSV = downloadCSV;
   });
 </script>
-
 </body>
 </html>
