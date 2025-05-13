@@ -4,7 +4,7 @@ const path = require('path');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 const API_BASE = 'https://app.uprightlabs.com/api/reports';
 
 app.use(express.static('public'));
@@ -44,7 +44,7 @@ app.get('/api/listings/shopgoodwill', (req, res) => {
 app.get('/api/export', async (req, res) => {
   const { time_start, time_end, shipping_method } = req.query;
   try {
-    const [orderResponse, ebay, sg] = await Promise.all([
+    const [orderResponse, ebay, sg, paidOrdersResponse] = await Promise.all([
   fetch(getUrl('/order_items', time_start, time_end), {
     headers: { 'X-Authorization': process.env.UPRIGHT_API_KEY }
   }).then(r => r.json()),
@@ -53,8 +53,23 @@ app.get('/api/export', async (req, res) => {
   }).then(r => r.json()),
   fetch(getUrl('/listings/shopgoodwill', time_start, time_end), {
     headers: { 'X-Authorization': process.env.UPRIGHT_API_KEY }
+  }).then(r => r.json()),
+  fetch(getUrl('/paid_orders', time_start, time_end), {
+    headers: { 'X-Authorization': process.env.UPRIGHT_API_KEY }
   }).then(r => r.json())
 ]);
+
+const orders = Array.isArray(orderResponse) ? orderResponse : orderResponse.data || [];
+const paidOrders = Array.isArray(paidOrdersResponse) ? paidOrdersResponse : paidOrdersResponse.data || [];
+const buyerMap = {};
+paidOrders.forEach(order => {
+  if (order.channel_buyer_id) {
+    buyerMap[order.channel_buyer_id] = {
+      shipping_contact: order.shipping_contact || '',
+      shipping_city: order.shipping_city || ''
+    };
+  }
+});
 
 const orders = Array.isArray(orderResponse) ? orderResponse : orderResponse.data || [];
 
@@ -77,15 +92,26 @@ const orders = Array.isArray(orderResponse) ? orderResponse : orderResponse.data
     add(ebay, 'ebay');
     add(sg, 'shopgoodwill');
 
-    const flat = Object.values(merged).map(entry => ({
-      product_sku: entry.product_sku,
-      order_items_count: entry.order_items.length,
-      ebay_count: entry.ebay.length,
-      shopgoodwill_count: entry.shopgoodwill.length,
-      order_items_json: JSON.stringify(entry.order_items),
-      ebay_json: JSON.stringify(entry.ebay),
-      shopgoodwill_json: JSON.stringify(entry.shopgoodwill)
-    }));
+    const flat = Object.values(merged).map(entry => {
+  const firstOrder = entry.order_items[0] || {};
+  const buyerInfo = buyerMap[firstOrder.channel_buyer_id] || {};
+
+  return {
+    product_sku: entry.product_sku,
+    order_items_count: entry.order_items.length,
+    ebay_count: entry.ebay.length,
+    shopgoodwill_count: entry.shopgoodwill.length,
+    shipping_method: firstOrder.order_shipping_method || '',
+    inventory_location: firstOrder.inventory_location || '',
+    product_title: firstOrder.product_title || '',
+    channel_buyer_id: firstOrder.channel_buyer_id || '',
+    shipping_contact: buyerInfo.shipping_contact || '',
+    shipping_city: buyerInfo.shipping_city || '',
+    order_items_json: JSON.stringify(entry.order_items),
+    ebay_json: JSON.stringify(entry.ebay),
+    shopgoodwill_json: JSON.stringify(entry.shopgoodwill)
+  };
+});
 
     res.json(flat);
   } catch (e) {
