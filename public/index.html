@@ -49,7 +49,7 @@
         html += `<tr>
           <td>${row.shipping_contact || '—'}</td>
           <td>${row.inventory_location || '—'}</td>
-          <td>${row.product_sku}</td>
+          <td><a href="https://app.uprightlabs.com/products?excludePrinted=false&hideFulfilled=false&ignoreRecycledFilter=true&onlyAuthenticated=false&page=1&query=${encodeURIComponent(row.product_sku)}&sort=id.desc" target="_blank">${row.product_sku}</a></td>
           <td>${row.product_title || '—'}</td>
           <td>${row.shipping_method || '—'}</td>
           <td>${row.channel_buyer_id || '—'}</td>
