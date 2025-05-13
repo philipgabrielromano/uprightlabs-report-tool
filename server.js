@@ -70,6 +70,9 @@ app.get('/api/export', async (req, res) => {
     if (!merged[sku]) merged[sku] = { product_sku: sku, order_items: [], ebay: [], shopgoodwill: [] };
     merged[sku][type].push(row);
   }
+}
+    merged[sku][type].push(row);
+  }
 };
         merged[sku][type].push(row);
       }
