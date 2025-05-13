@@ -60,10 +60,17 @@ app.get('/api/export', async (req, res) => {
     const merged = {};
 
     function add(group, type) {
-      for (const row of group) {
-        if (type === 'order_items' && shipping_method && row.shipping_method !== shipping_method) continue;
-        const sku = row.product_sku || 'UNKNOWN';
-        if (!merged[sku]) merged[sku] = { product_sku: sku, order_items: [], ebay: [], shopgoodwill: [] };
+  if (!Array.isArray(group)) {
+    console.warn(`Expected an array for ${type}, got:`, group);
+    return;
+  }
+  for (const row of group) {
+    if (type === 'order_items' && shipping_method && row.shipping_method !== shipping_method) continue;
+    const sku = row.product_sku || 'UNKNOWN';
+    if (!merged[sku]) merged[sku] = { product_sku: sku, order_items: [], ebay: [], shopgoodwill: [] };
+    merged[sku][type].push(row);
+  }
+};
         merged[sku][type].push(row);
       }
     }
@@ -72,6 +79,7 @@ app.get('/api/export', async (req, res) => {
     add(ebay, 'ebay');
     add(sg, 'shopgoodwill');
 
+    // Flatten for export: one row per product_sku
     const flat = Object.values(merged).map(entry => ({
       product_sku: entry.product_sku,
       order_items_count: entry.order_items.length,
