@@ -45,33 +45,32 @@ app.get('/api/export', async (req, res) => {
   const { time_start, time_end, shipping_method } = req.query;
   try {
     const [orderResponse, ebay, sg, paidOrdersResponse] = await Promise.all([
-  fetch(getUrl('/order_items', time_start, time_end), {
-    headers: { 'X-Authorization': process.env.UPRIGHT_API_KEY }
-  }).then(r => r.json()),
-  fetch(getUrl('/listings/ebay', time_start, time_end), {
-    headers: { 'X-Authorization': process.env.UPRIGHT_API_KEY }
-  }).then(r => r.json()),
-  fetch(getUrl('/listings/shopgoodwill', time_start, time_end), {
-    headers: { 'X-Authorization': process.env.UPRIGHT_API_KEY }
-  }).then(r => r.json()),
-  fetch(getUrl('/paid_orders', time_start, time_end), {
-    headers: { 'X-Authorization': process.env.UPRIGHT_API_KEY }
-  }).then(r => r.json())
-]);
+      fetch(getUrl('/order_items', time_start, time_end), {
+        headers: { 'X-Authorization': process.env.UPRIGHT_API_KEY }
+      }).then(r => r.json()),
+      fetch(getUrl('/listings/ebay', time_start, time_end), {
+        headers: { 'X-Authorization': process.env.UPRIGHT_API_KEY }
+      }).then(r => r.json()),
+      fetch(getUrl('/listings/shopgoodwill', time_start, time_end), {
+        headers: { 'X-Authorization': process.env.UPRIGHT_API_KEY }
+      }).then(r => r.json()),
+      fetch(getUrl('/paid_orders', time_start, time_end), {
+        headers: { 'X-Authorization': process.env.UPRIGHT_API_KEY }
+      }).then(r => r.json())
+    ]);
 
-const orders = Array.isArray(orderResponse) ? orderResponse : orderResponse.data || [];
-const paidOrders = Array.isArray(paidOrdersResponse) ? paidOrdersResponse : paidOrdersResponse.data || [];
-const buyerMap = {};
-paidOrders.forEach(order => {
-  if (order.channel_buyer_id) {
-    buyerMap[order.channel_buyer_id] = {
-      shipping_contact: order.shipping_contact || '',
-      shipping_city: order.shipping_city || ''
-    };
-  }
-});
+    const orders = Array.isArray(orderResponse) ? orderResponse : orderResponse.data || [];
+    const paidOrders = Array.isArray(paidOrdersResponse) ? paidOrdersResponse : paidOrdersResponse.data || [];
 
-const orders = Array.isArray(orderResponse) ? orderResponse : orderResponse.data || [];
+    const buyerMap = {};
+    paidOrders.forEach(order => {
+      if (order.channel_buyer_id) {
+        buyerMap[order.channel_buyer_id] = {
+          shipping_contact: order.shipping_contact || '',
+          shipping_city: order.shipping_city || ''
+        };
+      }
+    });(orderResponse) ? orderResponse : orderResponse.data || [];
 
     const merged = {};
 
@@ -108,6 +107,7 @@ const orders = Array.isArray(orderResponse) ? orderResponse : orderResponse.data
     shipping_contact: buyerInfo.shipping_contact || '',
     shipping_city: buyerInfo.shipping_city || '',
     order_items_json: JSON.stringify(entry.order_items),
+    order_paid_at: firstOrder.order_paid_at || '',
     ebay_json: JSON.stringify(entry.ebay),
     shopgoodwill_json: JSON.stringify(entry.shopgoodwill)
   };
