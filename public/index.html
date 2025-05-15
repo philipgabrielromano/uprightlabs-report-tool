@@ -75,12 +75,24 @@
       });
     }
 
-    function downloadCSV() {
+function downloadCSV() {
   const data = window.__reportData || [];
-  const keys = Object.keys(data[0] || {});
-  const rows = [keys.join(',')];
+  const columns = [
+    'shipping_contact',
+    'inventory_location',
+    'product_sku',
+    'product_title',
+    'upright_order_id'
+  ];
+  const rows = [columns.join(',')];
   data.forEach(obj => {
-    rows.push(keys.map(k => JSON.stringify(obj[k] || '')).join(','));
+    const orderItems = JSON.parse(obj.order_items_json || '[]');
+    const first = orderItems[0] || {};
+    const flatRow = {
+      ...obj,
+      upright_order_id: first.upright_order_id || ''
+    };
+    rows.push(columns.map(k => JSON.stringify(flatRow[k] || '')).join(','));
   });
   const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);
@@ -90,6 +102,7 @@
   a.click();
   URL.revokeObjectURL(url);
 }
+
 
     window.loadReport = loadReport;
     window.downloadCSV = downloadCSV;
