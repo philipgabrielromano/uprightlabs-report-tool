@@ -42,7 +42,7 @@
 
     function renderTable(data) {
       data.sort((a, b) => new Date(b.order_paid_at) - new Date(a.order_paid_at));
-      let html = '<table><thead><tr><th>Shipping Contact</th><th>Inventory Location</th><th>SKU</th><th>Product Title</th><th>Shipping Method</th><th>User ID</th><th>Shipping City</th><th>Upright Order ID</th><th>Order Paid At</th></tr></thead><tbody>';
+      let html = '<table><thead><tr><th>Shipping Contact</th><th>Inventory Location</th><th>SKU</th><th>Product Title</th><th>Upright Order ID</th><th>Shipping Method</th><th>User ID</th><th>Shipping City</th><th>Order Paid At</th></tr></thead><tbody>';
       for (const row of data) {
         const orderItems = JSON.parse(row.order_items_json || '[]');
         const firstItem = orderItems[0] || {};
@@ -51,10 +51,10 @@
           <td>${row.inventory_location || '—'}</td>
           <td><a href="https://app.uprightlabs.com/products?excludePrinted=false&hideFulfilled=false&ignoreRecycledFilter=true&onlyAuthenticated=false&page=1&query=${encodeURIComponent(row.product_sku)}&sort=id.desc" target="_blank">${row.product_sku}</a></td>
           <td>${row.product_title || '—'}</td>
+          <td><a href="https://app.uprightlabs.com/orders/${firstItem.upright_order_id}" target="_blank">${firstItem.upright_order_id || '—'}</a></td><td>${row.order_paid_at || '—'}</td>
           <td>${row.shipping_method || '—'}</td>
           <td><a href="https://sellerportal.shopgoodwill.com/admin/buyers/search_buyers?bid=0&fromedit=false&bres=&fname=&lname=&address=&regip=&ip=&lastloginip=&lastlogin=&phone=&mail=&username=${encodeURIComponent(row.channel_buyer_id)}&city=&state=&zip=&bstatus=&fnmode=Equals&lnmode=Equals&regipmode=Equals&llim=Equals&llm=Equals&pm=Equals&am=Equals&em=Equals&unm=Equals&cm=Equals&sm=Equals&zm=Equals" target="_blank">${row.channel_buyer_id || '—'}</a></td>
           <td>${row.shipping_city || '—'}</td>
-          <td><a href="https://app.uprightlabs.com/orders/${firstItem.upright_order_id}" target="_blank">${firstItem.upright_order_id || '—'}</a></td><td>${row.order_paid_at || '—'}</td>
           </tr>`;
       }
       html += '</tbody></table>';
