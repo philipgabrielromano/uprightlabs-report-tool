@@ -54,9 +54,8 @@
           <td>${row.shipping_method || '—'}</td>
           <td><a href="https://sellerportal.shopgoodwill.com/admin/buyers/search_buyers?bid=0&fromedit=false&bres=&fname=&lname=&address=&regip=&ip=&lastloginip=&lastlogin=&phone=&mail=&username=${encodeURIComponent(row.channel_buyer_id)}&city=&state=&zip=&bstatus=&fnmode=Equals&lnmode=Equals&regipmode=Equals&llim=Equals&llm=Equals&pm=Equals&am=Equals&em=Equals&unm=Equals&cm=Equals&sm=Equals&zm=Equals" target="_blank">${row.channel_buyer_id || '—'}</a></td>
           <td>${row.shipping_city || '—'}</td>
-          <td><a href="https://app.uprightlabs.com/orders/${firstItem.upright_order_id}" target="_blank">${firstItem.upright_order_id || '—'}</a></td><
-          td>${row.order_paid_at || '—'}</td>          
-        </tr>`;
+          <td><a href="https://app.uprightlabs.com/orders/${firstItem.upright_order_id}" target="_blank">${firstItem.upright_order_id || '—'}</a></td><td>${row.order_paid_at || '—'}</td>
+          </tr>`;
       }
       html += '</tbody></table>';
       document.getElementById('results').innerHTML = html;
