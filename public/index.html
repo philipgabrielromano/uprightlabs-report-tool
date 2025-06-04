@@ -44,23 +44,47 @@
       window.__reportData = data;
     }
 
-    function renderTable(data) {
-      data.sort((a, b) => new Date(b.order_paid_at) - new Date(a.order_paid_at));
-      let html = '<table><thead><tr><th>Shipping Contact</th><th>Inventory Location</th><th>SKU</th><th>Product Title</th><th>Upright Order ID</th></thead><tbody>';
-      for (const row of data) {
-        const orderItems = JSON.parse(row.order_items_json || '[]');
-        const firstItem = orderItems[0] || {};
-        html += `<tr>
-          <td>${row.shipping_contact || '—'}</td>
-          <td>${row.inventory_location || '—'}</td>
-          <td><a href="https://app.uprightlabs.com/products?excludePrinted=false&hideFulfilled=false&ignoreRecycledFilter=true&onlyAuthenticated=false&page=1&query=${encodeURIComponent(row.product_sku)}&sort=id.desc" target="_blank">${row.product_sku}</a></td>
-          <td>${row.product_title || '—'}</td>
-          <td><a href="https://app.uprightlabs.com/orders/${firstItem.upright_order_id}" target="_blank">${firstItem.upright_order_id || '—'}</a></td>
-          </tr>`;
-      }
-      html += '</tbody></table>';
-      document.getElementById('results').innerHTML = html;
-    }
+async function renderTable(data) {
+  const checkboxStates = await fetch("/api/checkbox-state").then(res => res.json());
+
+  data.sort((a, b) => new Date(b.order_paid_at) - new Date(a.order_paid_at));
+  let html = '<table><thead><tr><th>Select</th><th>Shipping Contact</th><th>Inventory Location</th><th>SKU</th><th>Product Title</th><th>Upright Order ID</th></thead><tbody>';
+  
+  for (const row of data) {
+    const orderItems = JSON.parse(row.order_items_json || '[]');
+    const firstItem = orderItems[0] || {};
+    const sku = row.product_sku;
+    const isChecked = checkboxStates[sku] ? 'checked' : '';
+
+    html += `<tr>
+      <td>
+        <input type="checkbox" data-sku="${sku}" ${isChecked} />
+      </td>
+      <td>${row.shipping_contact || '—'}</td>
+      <td>${row.inventory_location || '—'}</td>
+      <td><a href="https://app.uprightlabs.com/products?query=${encodeURIComponent(sku)}" target="_blank">${sku}</a></td>
+      <td>${row.product_title || '—'}</td>
+      <td><a href="https://app.uprightlabs.com/orders/${firstItem.upright_order_id}" target="_blank">${firstItem.upright_order_id || '—'}</a></td>
+    </tr>`;
+  }
+
+  html += '</tbody></table>';
+  document.getElementById('results').innerHTML = html;
+
+  // Add change listeners to checkboxes
+  document.querySelectorAll('input[type="checkbox"][data-sku]').forEach(cb => {
+    cb.addEventListener("change", () => {
+      const sku = cb.getAttribute("data-sku");
+      const checked = cb.checked;
+      fetch("/api/checkbox-state", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sku, checked })
+      });
+    });
+  });
+}
+
 
     function populateShippingMethods(data) {
       const select = document.getElementById('shippingMethod');
