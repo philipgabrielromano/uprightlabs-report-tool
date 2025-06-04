@@ -17,26 +17,31 @@ if (!fs.existsSync(DATA_PATH)) {
   fs.writeFileSync(DATA_PATH, JSON.stringify({ checked: false }));
 }
 
-// ✅ NEW: Get checkbox state
-app.get('/api/checkbox-state', (req, res) => {
+// Load all checkbox states
+app.get("/api/checkbox-state", (req, res) => {
   try {
     const data = JSON.parse(fs.readFileSync(DATA_PATH));
-    res.json({ checked: data.checked });
+    res.json(data.checked || {});
   } catch (err) {
-    console.error('Error reading checkbox state:', err);
-    res.status(500).json({ checked: false });
+    console.error("Error reading checkbox state:", err);
+    res.status(500).json({});
   }
 });
 
-// ✅ NEW: Save checkbox state
-app.post('/api/checkbox-state', (req, res) => {
+// Update one checkbox state (expects { sku: "SKU12345", checked: true/false })
+app.post("/api/checkbox-state", (req, res) => {
   try {
-    fs.writeFileSync(DATA_PATH, JSON.stringify({ checked: req.body.checked }));
+    const data = JSON.parse(fs.readFileSync(DATA_PATH));
+    data.checked = data.checked || {};
+    data.checked[req.body.sku] = req.body.checked;
+    fs.writeFileSync(DATA_PATH, JSON.stringify(data));
     res.json({ success: true });
   } catch (err) {
-    console.error('Error writing checkbox state:', err);
+    console.error("Error writing checkbox state:", err);
     res.status(500).json({ success: false });
   }
+});
+
 });
 
 function getUrl(endpoint, start, end) {
