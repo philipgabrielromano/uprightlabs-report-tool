@@ -49,11 +49,18 @@
 
 async function renderTable(data) {
   const checkboxStates = await fetch("/api/checkbox-state").then(res => res.json());
+  const showOnlyUnchecked = document.getElementById("filterUnchecked")?.checked;
 
-  data.sort((a, b) => new Date(b.order_paid_at) - new Date(a.order_paid_at));
+  // Filter data if needed
+  const filteredData = showOnlyUnchecked
+    ? data.filter(row => !checkboxStates[row.product_sku])
+    : data;
+
+  filteredData.sort((a, b) => new Date(b.order_paid_at) - new Date(a.order_paid_at));
+
   let html = '<table><thead><tr><th>Select</th><th>Shipping Contact</th><th>Inventory Location</th><th>SKU</th><th>Product Title</th><th>Upright Order ID</th></thead><tbody>';
   
-  for (const row of data) {
+  for (const row of filteredData) {
     const orderItems = JSON.parse(row.order_items_json || '[]');
     const firstItem = orderItems[0] || {};
     const sku = row.product_sku;
@@ -74,7 +81,7 @@ async function renderTable(data) {
   html += '</tbody></table>';
   document.getElementById('results').innerHTML = html;
 
-  // Add change listeners to checkboxes
+  // Add checkbox listeners
   document.querySelectorAll('input[type="checkbox"][data-sku]').forEach(cb => {
     cb.addEventListener("change", () => {
       const sku = cb.getAttribute("data-sku");
@@ -83,11 +90,15 @@ async function renderTable(data) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sku, checked })
+      }).then(() => {
+        // Re-render if we're filtering and one was just checked
+        if (showOnlyUnchecked && checked) {
+          renderTable(data);
+        }
       });
     });
   });
 }
-
 
     function populateShippingMethods(data) {
       const select = document.getElementById('shippingMethod');
