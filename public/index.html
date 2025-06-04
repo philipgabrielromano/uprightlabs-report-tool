@@ -147,6 +147,14 @@ async function renderTable(data) {
 
     // Expose to global scope
     window.loadReport = loadReport;
+    const filterCheckbox = document.getElementById("filterUnchecked");
+if (filterCheckbox) {
+  filterCheckbox.addEventListener("change", () => {
+    const data = window.__reportData || [];
+    renderTable(data);
+  });
+}
+
     window.downloadCSV = downloadCSV;
 
     // Checkbox state logic
