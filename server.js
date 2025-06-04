@@ -1,6 +1,7 @@
 const express = require('express');
 const fetch = require('node-fetch');
 const path = require('path');
+const fs = require('fs'); // ✅ NEW
 require('dotenv').config();
 
 const app = express();
@@ -8,6 +9,35 @@ const PORT = 3000;
 const API_BASE = 'https://app.uprightlabs.com/api/reports';
 
 app.use(express.static('public'));
+app.use(express.json()); // ✅ NEW
+
+// ✅ NEW: Checkbox state file
+const DATA_PATH = path.join(__dirname, 'data.json');
+if (!fs.existsSync(DATA_PATH)) {
+  fs.writeFileSync(DATA_PATH, JSON.stringify({ checked: false }));
+}
+
+// ✅ NEW: Get checkbox state
+app.get('/api/checkbox-state', (req, res) => {
+  try {
+    const data = JSON.parse(fs.readFileSync(DATA_PATH));
+    res.json({ checked: data.checked });
+  } catch (err) {
+    console.error('Error reading checkbox state:', err);
+    res.status(500).json({ checked: false });
+  }
+});
+
+// ✅ NEW: Save checkbox state
+app.post('/api/checkbox-state', (req, res) => {
+  try {
+    fs.writeFileSync(DATA_PATH, JSON.stringify({ checked: req.body.checked }));
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error writing checkbox state:', err);
+    res.status(500).json({ success: false });
+  }
+});
 
 function getUrl(endpoint, start, end) {
   return `${API_BASE}${endpoint}?time_start=${start}&time_end=${end}`;
@@ -92,26 +122,26 @@ app.get('/api/export', async (req, res) => {
     add(sg, 'shopgoodwill');
 
     const flat = Object.values(merged).map(entry => {
-  const firstOrder = entry.order_items[0] || {};
-  const buyerInfo = buyerMap[firstOrder.channel_buyer_id] || {};
+      const firstOrder = entry.order_items[0] || {};
+      const buyerInfo = buyerMap[firstOrder.channel_buyer_id] || {};
 
-  return {
-    product_sku: entry.product_sku,
-    order_items_count: entry.order_items.length,
-    ebay_count: entry.ebay.length,
-    shopgoodwill_count: entry.shopgoodwill.length,
-    shipping_method: firstOrder.order_shipping_method || '',
-    inventory_location: firstOrder.inventory_location || '',
-    product_title: firstOrder.product_title || '',
-    channel_buyer_id: firstOrder.channel_buyer_id || '',
-    shipping_contact: buyerInfo.shipping_contact || '',
-    shipping_city: buyerInfo.shipping_city || '',
-    order_items_json: JSON.stringify(entry.order_items),
-    order_paid_at: firstOrder.order_paid_at || '',
-    ebay_json: JSON.stringify(entry.ebay),
-    shopgoodwill_json: JSON.stringify(entry.shopgoodwill)
-  };
-});
+      return {
+        product_sku: entry.product_sku,
+        order_items_count: entry.order_items.length,
+        ebay_count: entry.ebay.length,
+        shopgoodwill_count: entry.shopgoodwill.length,
+        shipping_method: firstOrder.order_shipping_method || '',
+        inventory_location: firstOrder.inventory_location || '',
+        product_title: firstOrder.product_title || '',
+        channel_buyer_id: firstOrder.channel_buyer_id || '',
+        shipping_contact: buyerInfo.shipping_contact || '',
+        shipping_city: buyerInfo.shipping_city || '',
+        order_items_json: JSON.stringify(entry.order_items),
+        order_paid_at: firstOrder.order_paid_at || '',
+        ebay_json: JSON.stringify(entry.ebay),
+        shopgoodwill_json: JSON.stringify(entry.shopgoodwill)
+      };
+    });
 
     res.json(flat);
   } catch (e) {
