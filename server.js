@@ -42,8 +42,6 @@ app.post("/api/checkbox-state", (req, res) => {
   }
 });
 
-});
-
 function getUrl(endpoint, start, end) {
   return `${API_BASE}${endpoint}?time_start=${start}&time_end=${end}`;
 }
