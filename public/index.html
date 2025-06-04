@@ -20,6 +20,10 @@
       <option value="">-- Any --</option>
     </select>
   </label>
+  <label>
+    <input type="checkbox" id="rememberCheckbox" />
+    Remember filter
+  </label>
   <button onclick="loadReport()">Run Report</button>
   <button onclick="downloadCSV()">Export CSV</button>
 
@@ -75,38 +79,64 @@
       });
     }
 
-function downloadCSV() {
-  const data = window.__reportData || [];
-  const columns = [
-    'shipping_contact',
-    'inventory_location',
-    'product_sku',
-    'product_title',
-    'upright_order_id'
-  ];
-  const rows = [columns.join(',')];
-  data.forEach(obj => {
-    const orderItems = JSON.parse(obj.order_items_json || '[]');
-    const first = orderItems[0] || {};
-    const flatRow = {
-      ...obj,
-      upright_order_id: first.upright_order_id || ''
-    };
-    rows.push(columns.map(k => JSON.stringify(flatRow[k] || '')).join(','));
-  });
-  const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'upright_report.csv';
-  a.click();
-  URL.revokeObjectURL(url);
-}
+    function downloadCSV() {
+      const data = window.__reportData || [];
+      const columns = [
+        'shipping_contact',
+        'inventory_location',
+        'product_sku',
+        'product_title',
+        'upright_order_id'
+      ];
+      const rows = [columns.join(',')];
+      data.forEach(obj => {
+        const orderItems = JSON.parse(obj.order_items_json || '[]');
+        const first = orderItems[0] || {};
+        const flatRow = {
+          ...obj,
+          upright_order_id: first.upright_order_id || ''
+        };
+        rows.push(columns.map(k => JSON.stringify(flatRow[k] || '')).join(','));
+      });
+      const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'upright_report.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
 
-
+    // Expose to global scope
     window.loadReport = loadReport;
     window.downloadCSV = downloadCSV;
+
+    // Checkbox state logic
+    const checkbox = document.getElementById("rememberCheckbox");
+
+    if (checkbox) {
+      // Load saved checkbox state
+      fetch("/api/checkbox-state")
+        .then(res => res.json())
+        .then(data => {
+          checkbox.checked = data.checked;
+        })
+        .catch(err => {
+          console.error("Failed to fetch checkbox state:", err);
+        });
+
+      // Save on change
+      checkbox.addEventListener("change", () => {
+        fetch("/api/checkbox-state", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ checked: checkbox.checked }),
+        }).catch(err => {
+          console.error("Failed to save checkbox state:", err);
+        });
+      });
+    }
   });
-</script>
+  </script>
 </body>
 </html>
