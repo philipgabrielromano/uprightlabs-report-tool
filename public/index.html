@@ -20,16 +20,9 @@
       <option value="">-- Any --</option>
     </select>
   </label>
-  <label>
-    <input type="checkbox" id="rememberCheckbox" />
-    Remember filter
-  </label>
   <button onclick="loadReport()">Run Report</button>
   <button onclick="downloadCSV()">Export CSV</button>
-<label>
-  <input type="checkbox" id="filterUnchecked" />
-  Show only unchecked items
-</label>
+
   <div id="results"></div>
 
   <script defer>
@@ -47,58 +40,28 @@
       window.__reportData = data;
     }
 
-async function renderTable(data) {
-  const checkboxStates = await fetch("/api/checkbox-state").then(res => res.json());
-  const showOnlyUnchecked = document.getElementById("filterUnchecked")?.checked;
+    async function renderTable(data) {
+      data.sort((a, b) => new Date(b.order_paid_at) - new Date(a.order_paid_at));
 
-  // Filter data if needed
-  const filteredData = showOnlyUnchecked
-    ? data.filter(row => !checkboxStates[row.product_sku])
-    : data;
+      let html = '<table><thead><tr><th>Shipping Contact</th><th>Inventory Location</th><th>SKU</th><th>Product Title</th><th>Upright Order ID</th></tr></thead><tbody>';
 
-  filteredData.sort((a, b) => new Date(b.order_paid_at) - new Date(a.order_paid_at));
+      for (const row of data) {
+        const orderItems = JSON.parse(row.order_items_json || '[]');
+        const firstItem = orderItems[0] || {};
+        const sku = row.product_sku;
 
-  let html = '<table><thead><tr><th>Select</th><th>Shipping Contact</th><th>Inventory Location</th><th>SKU</th><th>Product Title</th><th>Upright Order ID</th></thead><tbody>';
-  
-  for (const row of filteredData) {
-    const orderItems = JSON.parse(row.order_items_json || '[]');
-    const firstItem = orderItems[0] || {};
-    const sku = row.product_sku;
-    const isChecked = checkboxStates[sku] ? 'checked' : '';
+        html += `<tr>
+          <td>${row.shipping_contact || '—'}</td>
+          <td>${row.inventory_location || '—'}</td>
+          <td><a href="https://app.uprightlabs.com/products?query=${encodeURIComponent(sku)}" target="_blank">${sku}</a></td>
+          <td>${row.product_title || '—'}</td>
+          <td><a href="https://app.uprightlabs.com/orders/${firstItem.upright_order_id}" target="_blank">${firstItem.upright_order_id || '—'}</a></td>
+        </tr>`;
+      }
 
-    html += `<tr>
-      <td>
-        <input type="checkbox" data-sku="${sku}" ${isChecked} />
-      </td>
-      <td>${row.shipping_contact || '—'}</td>
-      <td>${row.inventory_location || '—'}</td>
-      <td><a href="https://app.uprightlabs.com/products?query=${encodeURIComponent(sku)}" target="_blank">${sku}</a></td>
-      <td>${row.product_title || '—'}</td>
-      <td><a href="https://app.uprightlabs.com/orders/${firstItem.upright_order_id}" target="_blank">${firstItem.upright_order_id || '—'}</a></td>
-    </tr>`;
-  }
-
-  html += '</tbody></table>';
-  document.getElementById('results').innerHTML = html;
-
-  // Add checkbox listeners
-  document.querySelectorAll('input[type="checkbox"][data-sku]').forEach(cb => {
-    cb.addEventListener("change", () => {
-      const sku = cb.getAttribute("data-sku");
-      const checked = cb.checked;
-      fetch("/api/checkbox-state", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sku, checked })
-      }).then(() => {
-        // Re-render if we're filtering and one was just checked
-        if (showOnlyUnchecked && checked) {
-          renderTable(data);
-        }
-      });
-    });
-  });
-}
+      html += '</tbody></table>';
+      document.getElementById('results').innerHTML = html;
+    }
 
     function populateShippingMethods(data) {
       const select = document.getElementById('shippingMethod');
@@ -147,41 +110,7 @@ async function renderTable(data) {
 
     // Expose to global scope
     window.loadReport = loadReport;
-    const filterCheckbox = document.getElementById("filterUnchecked");
-if (filterCheckbox) {
-  filterCheckbox.addEventListener("change", () => {
-    const data = window.__reportData || [];
-    renderTable(data);
-  });
-}
-
     window.downloadCSV = downloadCSV;
-
-    // Checkbox state logic
-    const checkbox = document.getElementById("rememberCheckbox");
-
-    if (checkbox) {
-      // Load saved checkbox state
-      fetch("/api/checkbox-state")
-        .then(res => res.json())
-        .then(data => {
-          checkbox.checked = data.checked;
-        })
-        .catch(err => {
-          console.error("Failed to fetch checkbox state:", err);
-        });
-
-      // Save on change
-      checkbox.addEventListener("change", () => {
-        fetch("/api/checkbox-state", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ checked: checkbox.checked }),
-        }).catch(err => {
-          console.error("Failed to save checkbox state:", err);
-        });
-      });
-    }
   });
   </script>
 </body>
