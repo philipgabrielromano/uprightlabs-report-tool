@@ -11,32 +11,6 @@ const API_BASE = 'https://app.uprightlabs.com/api/reports';
 app.use(express.static('public'));
 app.use(express.json()); // ✅ NEW
 
-// ---------- Helpers (NEW) ----------
-/**
- * Prefer upstream flat fields, then nested shipping, then reasonable fallbacks.
- * Centralize logic so if Upright changes payloads again, you only tweak here.
- */
-function getShippingContact(src) {
-  return (
-    src?.shipping_contact ??          // legacy flat field
-    src?.shipping?.contact ??         // nested contact
-    src?.shipping?.name ??            // nested name
-    src?.recipient_name ??            // alternate flat recipient field
-    src?.buyer?.name ??               // some payloads include buyer object
-    src?.customer_name ??             // occasional alias
-    src?.shipping_name ??             // another alias seen in some APIs
-    ''                                // final fallback
-  );
-}
-
-function getShippingCity(src) {
-  return (
-    src?.shipping_city ??
-    src?.shipping?.city ??
-    ''
-  );
-}
-
 // ✅ NEW: Checkbox state file
 const DATA_PATH = path.join(__dirname, 'data.json');
 if (!fs.existsSync(DATA_PATH)) {
@@ -121,13 +95,12 @@ app.get('/api/export', async (req, res) => {
     const orders = Array.isArray(orderResponse) ? orderResponse : orderResponse.data || [];
     const paidOrders = Array.isArray(paidOrdersResponse) ? paidOrdersResponse : paidOrdersResponse.data || [];
 
-    // Build buyer map from paid orders, but use robust fallbacks
     const buyerMap = {};
-    paidOrders.forEach(po => {
-      if (po.channel_buyer_id) {
-        buyerMap[po.channel_buyer_id] = {
-          shipping_contact: getShippingContact(po),
-          shipping_city: getShippingCity(po)
+    paidOrders.forEach(order => {
+      if (order.channel_buyer_id) {
+        buyerMap[order.channel_buyer_id] = {
+          shipping_contact: order.shipping_contact || '',
+          shipping_city: order.shipping_city || ''
         };
       }
     });
@@ -155,15 +128,6 @@ app.get('/api/export', async (req, res) => {
       const firstOrder = entry.order_items[0] || {};
       const buyerInfo = buyerMap[firstOrder.channel_buyer_id] || {};
 
-      // Compute normalized shipping contact/city with layered fallbacks:
-      // 1) buyerMap from paid_orders (preferred if present)
-      // 2) fields directly on firstOrder (handles cases where buyerMap is missing)
-      const normalizedShippingContact =
-        buyerInfo.shipping_contact || getShippingContact(firstOrder);
-
-      const normalizedShippingCity =
-        buyerInfo.shipping_city || getShippingCity(firstOrder);
-
       return {
         product_sku: entry.product_sku,
         order_items_count: entry.order_items.length,
@@ -173,24 +137,14 @@ app.get('/api/export', async (req, res) => {
         inventory_location: firstOrder.inventory_location || '',
         product_title: firstOrder.product_title || '',
         channel_buyer_id: firstOrder.channel_buyer_id || '',
-        // ✅ Use normalized values so "Shipping Contact" reliably populates
-        shipping_contact: normalizedShippingContact,
-        shipping_city: normalizedShippingCity,
+        shipping_contact: buyerInfo.shipping_contact || '',
+        shipping_city: buyerInfo.shipping_city || '',
         order_items_json: JSON.stringify(entry.order_items),
         order_paid_at: firstOrder.order_paid_at || '',
         ebay_json: JSON.stringify(entry.ebay),
         shopgoodwill_json: JSON.stringify(entry.shopgoodwill)
       };
     });
-
-    // Optional: one-line debug for the first row to verify fields during testing
-    if (flat.length) {
-      console.log('shipping debug:', {
-        fromPaidOrders_contact: buyerMap[flat[0].channel_buyer_id]?.shipping_contact,
-        fromOrder_fallback_contact: getShippingContact((merged[flat[0].product_sku] || {}).order_items?.[0]),
-        final_contact: flat[0].shipping_contact
-      });
-    }
 
     res.json(flat);
   } catch (e) {
