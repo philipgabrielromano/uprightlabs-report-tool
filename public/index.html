@@ -33,11 +33,6 @@
       const method = document.getElementById('shippingMethod').value;
 
       const res = await fetch(`/api/export?time_start=${start}T00:00:00.000Z&time_end=${end}T23:59:59.999Z&shipping_method=${encodeURIComponent(method)}`);
-      if (!res.ok) {
-        console.error('Export request failed:', res.status, res.statusText);
-        document.getElementById('results').textContent = 'Failed to load report.';
-        return;
-      }
       const data = await res.json();
 
       renderTable(data);
@@ -45,7 +40,7 @@
       window.__reportData = data;
     }
 
-    function renderTable(data) {
+    async function renderTable(data) {
       data.sort((a, b) => new Date(b.order_paid_at) - new Date(a.order_paid_at));
 
       let html = '<table><thead><tr><th>Shipping Contact</th><th>Inventory Location</th><th>SKU</th><th>Product Title</th><th>Upright Order ID</th></tr></thead><tbody>';
@@ -58,9 +53,9 @@
         html += `<tr>
           <td>${row.shipping_contact || '—'}</td>
           <td>${row.inventory_location || '—'}</td>
-          <td><a href="https://app.uprightlabs.com/products?query=${encodeURIComponent(sku)}" target="_blank" rel="noopener noreferrer">${sku}</a></td>
+          <td><a href="https://app.uprightlabs.com/products?query=${encodeURIComponent(sku)}" target="_blank">${sku}</a></td>
           <td>${row.product_title || '—'}</td>
-          <td><a href="https://app.uprightlabs.com/orders/${firstItem.upright_order_id || ''}" target="_blank" rel="noopener noreferrer">${firstItem.upright_order_id || '—'}</a></td>
+          <td><a href="https://app.uprightlabs.com/orders/${firstItem.upright_order_id}" target="_blank">${firstItem.upright_order_id || '—'}</a></td>
         </tr>`;
       }
 
@@ -73,16 +68,12 @@
       const current = select.value;
       const staticOptions = ['FedEx', 'Pickup', 'FedExHomeDelivery'];
       const set = new Set(staticOptions);
-
       data.forEach(row => {
         const items = JSON.parse(row.order_items_json || '[]');
         items.forEach(item => {
-          // CHANGED: prefer order_shipping_method; fall back to shipping_method if present
-          const method = item.order_shipping_method || item.shipping_method;
-          if (method) set.add(method);
+          if (item.shipping_method) set.add(item.shipping_method);
         });
       });
-
       select.innerHTML = '<option value="">-- Any --</option>';
       [...set].sort().forEach(m => {
         select.innerHTML += `<option value="${m}" ${m === current ? 'selected' : ''}>${m}</option>`;
@@ -106,7 +97,7 @@
           ...obj,
           upright_order_id: first.upright_order_id || ''
         };
-        rows.push(columns.map(k => JSON.stringify(flatRow[k] ?? '')).join(','));
+        rows.push(columns.map(k => JSON.stringify(flatRow[k] || '')).join(','));
       });
       const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
